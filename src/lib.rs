@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use crate::RomanDigit::{C, D, I, L, M, V, X};
@@ -76,8 +76,8 @@ struct RomanNumber {
 
 impl RomanNumber {
 
-    pub fn new(roman_digits: Vec<RomanDigit>) -> RomanNumber{
-        RomanNumber{ roman_digits }
+    pub fn new(roman_digits: Vec<RomanDigit>) -> RomanNumber {
+        RomanNumber { roman_digits }
     }
 
     pub fn from_decimal(integer: usize) -> RomanNumber {
@@ -127,12 +127,26 @@ impl RomanNumber {
     }
 }
 
+impl Display for RomanNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = self.roman_digits.iter()
+            .map(|rn| rn.to_string())
+            .collect::<Vec<String>>()
+            .join("");
 
-fn to_string(rns: &Vec<RomanDigit>) -> String {
-    rns.iter()
-        .map(|rn| rn.to_string())
-        .collect::<Vec<String>>()
-        .join("")
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for RomanNumber {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let c: Vec<RomanDigit> = s.chars().map(|c| RomanDigit::from_str(c.to_string().as_str()))
+            .collect::<Result<Vec<RomanDigit>, Self::Err>>()?;
+
+        Ok(RomanNumber::new(c))
+    }
 }
 
 #[cfg(test)]
@@ -190,22 +204,29 @@ mod tests {
 
     #[test]
     fn test_convert_mmmcdxcvii_to_3497() {
-        let result = RomanNumber::new( vec![M, M, M, C, D, X, C, V, I, I]).to_decimal();
+        let result = RomanNumber::new(vec![M, M, M, C, D, X, C, V, I, I]).to_decimal();
 
         assert_eq!(result, 3497)
     }
 
     #[test]
     fn test_convert_i_to_1() {
-        let result =  RomanNumber::new( vec![I]).to_decimal();
+        let result = RomanNumber::new(vec![I]).to_decimal();
 
         assert_eq!(result, 1)
     }
 
     #[test]
     fn test_convert_xix_to_19() {
-        let result =  RomanNumber::new( vec![X, I, X]).to_decimal();
+        let result = RomanNumber::new(vec![X, I, X]).to_decimal();
 
         assert_eq!(result, 19)
+    }
+
+    #[test]
+    fn test_from_string_cv_to_cv() {
+        let result = RomanNumber::from_str("cv").unwrap();
+
+        assert_eq!(result, RomanNumber::new(vec![C, V]))
     }
 }
