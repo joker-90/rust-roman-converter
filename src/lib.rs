@@ -1,3 +1,9 @@
+#[cfg(test)]
+extern crate quickcheck;
+#[cfg(test)]
+#[macro_use(quickcheck)]
+extern crate quickcheck_macros;
+
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -75,7 +81,6 @@ struct RomanNumber {
 }
 
 impl RomanNumber {
-
     pub fn new(roman_digits: Vec<RomanDigit>) -> RomanNumber {
         RomanNumber { roman_digits }
     }
@@ -130,7 +135,7 @@ impl RomanNumber {
 impl Display for RomanNumber {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let s = self.roman_digits.iter()
-            .map(|rn| rn.to_string())
+            .map(RomanDigit::to_string)
             .collect::<Vec<String>>()
             .join("");
 
@@ -142,7 +147,8 @@ impl FromStr for RomanNumber {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c: Vec<RomanDigit> = s.chars().map(|c| RomanDigit::from_str(c.to_string().as_str()))
+        let c: Vec<RomanDigit> = s.chars()
+            .map(|c| RomanDigit::from_str(c.to_string().as_str()))
             .collect::<Result<Vec<RomanDigit>, Self::Err>>()?;
 
         Ok(RomanNumber::new(c))
@@ -155,16 +161,9 @@ mod tests {
 
     #[test]
     fn test_parse_i() {
-        let result = RomanDigit::from_str("I");
+        let result = RomanDigit::from_str("I").unwrap();
 
-        assert_eq!(result.unwrap(), I)
-    }
-
-    #[test]
-    fn test_compare_i_and_v() {
-        let result = I <= V;
-
-        assert_eq!(result, true)
+        assert_eq!(result, I)
     }
 
     #[test]
@@ -174,59 +173,95 @@ mod tests {
         assert_eq!(result, RomanNumber { roman_digits: vec![I, I, I] })
     }
 
-    #[test]
-    fn test_convert_4_to_iv() {
-        let result = RomanNumber::from_decimal(4);
-
-        assert_eq!(result, RomanNumber { roman_digits: vec![I, V] })
+    #[quickcheck]
+    fn has_max_3_i(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), I, 3)
     }
 
-    #[test]
-    fn test_convert_6_to_vi() {
-        let result = RomanNumber::from_decimal(6);
-
-        assert_eq!(result, RomanNumber { roman_digits: vec![V, I] })
+    #[quickcheck]
+    fn has_max_4_x(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), X, 4)
     }
 
-    #[test]
-    fn test_convert_37_to_xxxvii() {
-        let result = RomanNumber::from_decimal(37);
-
-        assert_eq!(result, RomanNumber { roman_digits: vec![X, X, X, V, I, I] })
+    #[quickcheck]
+    fn has_max_4_c(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), C, 4)
     }
 
-    #[test]
-    fn test_convert_3497_to_mmmcdxcvii() {
-        let result = RomanNumber::from_decimal(3497);
-
-        assert_eq!(result, RomanNumber { roman_digits: vec![M, M, M, C, D, X, C, V, I, I] })
+    #[quickcheck]
+    fn has_max_1_v(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), V, 1)
     }
 
-    #[test]
-    fn test_convert_mmmcdxcvii_to_3497() {
-        let result = RomanNumber::new(vec![M, M, M, C, D, X, C, V, I, I]).to_decimal();
-
-        assert_eq!(result, 3497)
+    #[quickcheck]
+    fn has_max_1_l(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), L, 1)
     }
 
-    #[test]
-    fn test_convert_i_to_1() {
-        let result = RomanNumber::new(vec![I]).to_decimal();
-
-        assert_eq!(result, 1)
+    #[quickcheck]
+    fn has_max_1_d(int: usize) -> bool {
+        max_repetition_of(&RomanNumber::from_decimal(int), D, 1)
     }
 
-    #[test]
-    fn test_convert_xix_to_19() {
-        let result = RomanNumber::new(vec![X, I, X]).to_decimal();
-
-        assert_eq!(result, 19)
+    fn max_repetition_of(rn: &RomanNumber, rd: RomanDigit, max: usize) -> bool {
+        rn.roman_digits.iter()
+            .filter(|&&d| d == rd)
+            .count() <= max
     }
+    //
+    // #[test]
+    // fn test_convert_4_to_iv() {
+    //     let result = RomanNumber::from_decimal(4);
+    //
+    //     assert_eq!(result, RomanNumber { roman_digits: vec![I, V] })
+    // }
+    //
+    // #[test]
+    // fn test_convert_6_to_vi() {
+    //     let result = RomanNumber::from_decimal(6);
+    //
+    //     assert_eq!(result, RomanNumber { roman_digits: vec![V, I] })
+    // }
+    //
+    // #[test]
+    // fn test_convert_37_to_xxxvii() {
+    //     let result = RomanNumber::from_decimal(37);
+    //
+    //     assert_eq!(result, RomanNumber { roman_digits: vec![X, X, X, V, I, I] })
+    // }
+    //
+    // #[test]
+    // fn test_convert_3497_to_mmmcdxcvii() {
+    //     let result = RomanNumber::from_decimal(3497);
+    //
+    //     assert_eq!(result, RomanNumber { roman_digits: vec![M, M, M, C, D, X, C, V, I, I] })
+    // }
 
-    #[test]
-    fn test_from_string_cv_to_cv() {
-        let result = RomanNumber::from_str("cv").unwrap();
-
-        assert_eq!(result, RomanNumber::new(vec![C, V]))
-    }
+    // #[test]
+    // fn test_convert_mmmcdxcvii_to_3497() {
+    //     let result = RomanNumber::new(vec![M, M, M, C, D, X, C, V, I, I]).to_decimal();
+    //
+    //     assert_eq!(result, 3497)
+    // }
+    //
+    // #[test]
+    // fn test_convert_i_to_1() {
+    //     let result = RomanNumber::new(vec![I]).to_decimal();
+    //
+    //     assert_eq!(result, 1)
+    // }
+    //
+    // #[test]
+    // fn test_convert_xix_to_19() {
+    //     let result = RomanNumber::new(vec![X, I, X]).to_decimal();
+    //
+    //     assert_eq!(result, 19)
+    // }
+    //
+    // #[test]
+    // fn test_from_string_cv_to_cv() {
+    //     let result = RomanNumber::from_str("cv").unwrap();
+    //
+    //     assert_eq!(result, RomanNumber::new(vec![C, V]))
+    // }
 }
