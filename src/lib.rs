@@ -167,40 +167,99 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_3_to_iii() {
-        let result = RomanNumber::from_decimal(3);
-
-        assert_eq!(result, RomanNumber { roman_digits: vec![I, I, I] })
+    fn has_max_3_i() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), I, 3), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_3_i(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), I, 3)
+    #[test]
+    fn has_max_4_x() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), X, 4), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_4_x(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), X, 4)
+    #[test]
+    fn has_max_4_c() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), C, 4), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_4_c(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), C, 4)
+    #[test]
+    fn has_max_1_v() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), V, 1), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_1_v(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), V, 1)
+    #[test]
+    fn has_max_1_l() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), L, 1), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_1_l(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), L, 1)
+    #[test]
+    fn has_max_1_d() {
+        for int in 0..4000 {
+            assert!(max_repetition_of(&RomanNumber::from_decimal(int), D, 1), "property test failed for int: {}", int)
+        }
     }
 
-    #[quickcheck]
-    fn has_max_1_d(int: usize) -> bool {
-        max_repetition_of(&RomanNumber::from_decimal(int), D, 1)
+    #[test]
+    fn int_has_4_ones_roman_has_iv() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            four_property(int, &roman, 1, I, V)
+        }
+    }
+
+    #[test]
+    fn int_has_4_tens_roman_has_xl() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            four_property(int, &roman, 10, X, L)
+        }
+    }
+
+    #[test]
+    fn int_has_4_hundreds_roman_has_cd() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            four_property(int, &roman, 100, C, D)
+        }
+    }
+
+    #[test]
+    fn int_has_9_ones_roman_has_ix() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            nine_property(int, &roman, 1, I, X)
+        }
+    }
+
+    #[test]
+    fn int_has_9_tens_roman_has_xc() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            nine_property(int, &roman, 10, X, C)
+        }
+    }
+
+    #[test]
+    fn int_has_9_hundreds_roman_has_cm() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+
+            nine_property(int, &roman, 100, C, M)
+        }
     }
 
     fn max_repetition_of(rn: &RomanNumber, rd: RomanDigit, max: usize) -> bool {
@@ -208,42 +267,47 @@ mod tests {
             .filter(|&&d| d == rd)
             .count() <= max
     }
-    //
-    // #[test]
-    // fn test_convert_4_to_iv() {
-    //     let result = RomanNumber::from_decimal(4);
-    //
-    //     assert_eq!(result, RomanNumber { roman_digits: vec![I, V] })
-    // }
-    //
-    // #[test]
-    // fn test_convert_6_to_vi() {
-    //     let result = RomanNumber::from_decimal(6);
-    //
-    //     assert_eq!(result, RomanNumber { roman_digits: vec![V, I] })
-    // }
-    //
-    // #[test]
-    // fn test_convert_37_to_xxxvii() {
-    //     let result = RomanNumber::from_decimal(37);
-    //
-    //     assert_eq!(result, RomanNumber { roman_digits: vec![X, X, X, V, I, I] })
-    // }
-    //
-    // #[test]
-    // fn test_convert_3497_to_mmmcdxcvii() {
-    //     let result = RomanNumber::from_decimal(3497);
-    //
-    //     assert_eq!(result, RomanNumber { roman_digits: vec![M, M, M, C, D, X, C, V, I, I] })
-    // }
 
-    // #[test]
-    // fn test_convert_mmmcdxcvii_to_3497() {
-    //     let result = RomanNumber::new(vec![M, M, M, C, D, X, C, V, I, I]).to_decimal();
-    //
-    //     assert_eq!(result, 3497)
-    // }
-    //
+    fn four_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, five_digit: RomanDigit) {
+        let exist = roman.roman_digits.as_slice().windows(2)
+            .any(|chunk|
+                match chunk {
+                    [stl, last] if last == &five_digit && stl == &unit_digit => true,
+                    _ => false
+                });
+
+        if exist {
+            assert_eq!(get_digit_at(int, place), 4, "unexpected match with {}{} in int: {}, was: {}", unit_digit, five_digit, int, roman)
+        } else {
+            assert_ne!(get_digit_at(int, place), 4, "missing {}{} in int: {}, was: {}", unit_digit, five_digit, int, roman)
+        }
+    }
+
+    fn nine_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, tens_digit: RomanDigit) {
+        let exist = roman.roman_digits.as_slice().windows(2)
+            .any(|chunk| {
+                match chunk {
+                    [stl, last] if last == &tens_digit && stl == &unit_digit => true,
+                    _ => false
+                }
+            });
+
+        if exist {
+            assert_eq!(get_digit_at(int, place), 9, "unexpected match with {}{} in int: {}, was: {}", unit_digit, tens_digit, int, roman)
+        } else {
+            assert_ne!(get_digit_at(int, place), 9, "missing {}{} in int: {}, was: {}", unit_digit, tens_digit, int, roman)
+        }
+    }
+
+    #[test]
+    fn test_convert_int_to_roman_to_int_return_the_same() {
+        for int in 0..4000 {
+            let roman = RomanNumber::from_decimal(int);
+            let result = roman.to_decimal();
+            assert_eq!(result, int)
+        }
+    }
+
     // #[test]
     // fn test_convert_i_to_1() {
     //     let result = RomanNumber::new(vec![I]).to_decimal();
