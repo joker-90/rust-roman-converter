@@ -1,10 +1,4 @@
-#[cfg(test)]
-extern crate quickcheck;
-#[cfg(test)]
-#[macro_use(quickcheck)]
-extern crate quickcheck_macros;
-
-use std::fmt;
+use std::{error, fmt};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -23,7 +17,7 @@ enum RomanDigit {
     M,
 }
 
-impl fmt::Display for RomanDigit {
+impl Display for RomanDigit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
             I => "I",
@@ -38,11 +32,24 @@ impl fmt::Display for RomanDigit {
     }
 }
 
+#[derive(Debug, Clone)]
+struct ParseRomanDigitError {
+    wrong_string: String
+}
+
+impl fmt::Display for ParseRomanDigitError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "invalid characters: {}", self.wrong_string)
+    }
+}
+
+impl error::Error for ParseRomanDigitError {}
+
 impl FromStr for RomanDigit {
-    type Err = ();
+    type Err = ParseRomanDigitError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = &s.to_uppercase();
+        let s = s.to_uppercase();
         match s.as_str() {
             "I" => Ok(I),
             "V" => Ok(V),
@@ -51,7 +58,7 @@ impl FromStr for RomanDigit {
             "C" => Ok(C),
             "D" => Ok(D),
             "M" => Ok(M),
-            _ => Err(())
+            _ => Err(ParseRomanDigitError { wrong_string: s })
         }
     }
 }
@@ -144,7 +151,7 @@ impl Display for RomanNumber {
 }
 
 impl FromStr for RomanNumber {
-    type Err = ();
+    type Err = ParseRomanDigitError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let c: Vec<RomanDigit> = s.chars()
@@ -269,7 +276,9 @@ mod tests {
     }
 
     fn four_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, five_digit: RomanDigit) {
-        let exist = roman.roman_digits.as_slice().windows(2)
+        let exist = roman.roman_digits
+            .as_slice()
+            .windows(2)
             .any(|chunk|
                 match chunk {
                     [stl, last] if last == &five_digit && stl == &unit_digit => true,
@@ -284,7 +293,9 @@ mod tests {
     }
 
     fn nine_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, tens_digit: RomanDigit) {
-        let exist = roman.roman_digits.as_slice().windows(2)
+        let exist = roman.roman_digits.
+            as_slice()
+            .windows(2)
             .any(|chunk| {
                 match chunk {
                     [stl, last] if last == &tens_digit && stl == &unit_digit => true,
@@ -304,28 +315,15 @@ mod tests {
         for int in 0..4000 {
             let roman = RomanNumber::from_decimal(int);
             let result = roman.to_decimal();
-            assert_eq!(result, int)
+
+            assert_eq!(result, int, "roman was: {}, resulting int was {}", roman, int)
         }
     }
 
-    // #[test]
-    // fn test_convert_i_to_1() {
-    //     let result = RomanNumber::new(vec![I]).to_decimal();
-    //
-    //     assert_eq!(result, 1)
-    // }
-    //
-    // #[test]
-    // fn test_convert_xix_to_19() {
-    //     let result = RomanNumber::new(vec![X, I, X]).to_decimal();
-    //
-    //     assert_eq!(result, 19)
-    // }
-    //
-    // #[test]
-    // fn test_from_string_cv_to_cv() {
-    //     let result = RomanNumber::from_str("cv").unwrap();
-    //
-    //     assert_eq!(result, RomanNumber::new(vec![C, V]))
-    // }
+    #[test]
+    fn test_from_string_cv_to_cv() {
+        let result = RomanNumber::from_str("cv").unwrap();
+
+        assert_eq!(result, RomanNumber::new(vec![C, V]))
+    }
 }
