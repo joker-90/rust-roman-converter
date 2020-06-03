@@ -43,7 +43,11 @@ impl fmt::Display for ParseRomanDigitError {
     }
 }
 
-impl error::Error for ParseRomanDigitError {}
+impl error::Error for ParseRomanDigitError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
+    }
+}
 
 impl FromStr for RomanDigit {
     type Err = ParseRomanDigitError;
@@ -154,170 +158,180 @@ impl FromStr for RomanNumber {
     type Err = ParseRomanDigitError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c: Vec<RomanDigit> = s.chars()
+        let roman_digits: Vec<RomanDigit> = s.chars()
             .map(|c| RomanDigit::from_str(c.to_string().as_str()))
             .collect::<Result<Vec<RomanDigit>, Self::Err>>()?;
 
-        Ok(RomanNumber::new(c))
+        Ok(RomanNumber::new(roman_digits))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Range;
+
     use super::*;
 
-    #[test]
-    fn test_parse_i() {
-        let result = RomanDigit::from_str("I").unwrap();
+    const INT_RANGE: Range<usize> = 0..5000;
 
-        assert_eq!(result, I)
-    }
+    const ONES: usize = 1;
+    const TENS: usize = 10;
+    const HUNDREDS: usize = 100;
 
     #[test]
     fn has_max_3_i() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), I, 3), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 3 I", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), I, 3)
+        })
     }
 
     #[test]
     fn has_max_4_x() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), X, 4), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 4 X", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), X, 4)
+        })
     }
 
     #[test]
     fn has_max_4_c() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), C, 4), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 4 C", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), C, 4)
+        })
     }
 
     #[test]
     fn has_max_1_v() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), V, 1), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 1 V", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), V, 1)
+        })
     }
 
     #[test]
     fn has_max_1_l() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), L, 1), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 1 L", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), L, 1)
+        })
     }
 
     #[test]
     fn has_max_1_d() {
-        for int in 0..4000 {
-            assert!(max_repetition_of(&RomanNumber::from_decimal(int), D, 1), "property test failed for int: {}", int)
-        }
+        test_property("Roman has max 1 D", |int| {
+            max_repetition_of(&RomanNumber::from_decimal(int), D, 1)
+        })
+    }
+
+    #[test]
+    fn has_m_if_upper_to_1000() {
+        test_property("Roman has at least one M if int is greater than 1000", |int| {
+            let roman = RomanNumber::from_decimal(int);
+            match roman.roman_digits.as_slice() {
+                [M, ..] => int >= 1000,
+                _ => int <= 1000
+            }
+        })
     }
 
     #[test]
     fn int_has_4_ones_roman_has_iv() {
-        for int in 0..4000 {
+        test_property("Roman has IV if int has 4 ones", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            four_property(int, &roman, 1, I, V)
-        }
+            four_property(int, &roman, ONES, I, V)
+        })
     }
 
     #[test]
     fn int_has_4_tens_roman_has_xl() {
-        for int in 0..4000 {
+        test_property("Roman has XL if int has 4 tens", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            four_property(int, &roman, 10, X, L)
-        }
+            four_property(int, &roman, TENS, X, L)
+        })
     }
 
     #[test]
     fn int_has_4_hundreds_roman_has_cd() {
-        for int in 0..4000 {
+        test_property("Roman has CD if int has 4 hundreds", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            four_property(int, &roman, 100, C, D)
-        }
+            four_property(int, &roman, HUNDREDS, C, D)
+        })
     }
 
     #[test]
     fn int_has_9_ones_roman_has_ix() {
-        for int in 0..4000 {
+        test_property("Roman has IX if int has 9 ones", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            nine_property(int, &roman, 1, I, X)
-        }
+            nine_property(int, &roman, ONES, I, X)
+        })
     }
 
     #[test]
     fn int_has_9_tens_roman_has_xc() {
-        for int in 0..4000 {
+        test_property("Roman has XC if int has 9 tens", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            nine_property(int, &roman, 10, X, C)
-        }
+            nine_property(int, &roman, TENS, X, C)
+        })
     }
 
     #[test]
     fn int_has_9_hundreds_roman_has_cm() {
-        for int in 0..4000 {
+        test_property("Roman has CM if int has 9 hundreds", |int| {
             let roman = RomanNumber::from_decimal(int);
 
-            nine_property(int, &roman, 100, C, M)
+            nine_property(int, &roman, HUNDREDS, C, M)
+        })
+    }
+
+    fn test_property<P>(name: &str, p: P) where P: Fn(usize) -> bool {
+        for int in INT_RANGE {
+            assert!(p(int), "Property {} failed for int: {}", name, int);
         }
     }
 
-    fn max_repetition_of(rn: &RomanNumber, rd: RomanDigit, max: usize) -> bool {
-        rn.roman_digits.iter()
+    fn max_repetition_of(roman: &RomanNumber, rd: RomanDigit, max: usize) -> bool {
+        roman.roman_digits.iter()
             .filter(|&&d| d == rd)
             .count() <= max
     }
 
-    fn four_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, five_digit: RomanDigit) {
-        let exist = roman.roman_digits
-            .as_slice()
-            .windows(2)
-            .any(|chunk|
-                match chunk {
-                    [stl, last] if last == &five_digit && stl == &unit_digit => true,
-                    _ => false
-                });
+    fn four_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, second_digit: RomanDigit) -> bool {
+        let exist = has_pattern(roman, &[unit_digit, second_digit]);
 
         if exist {
-            assert_eq!(get_digit_at(int, place), 4, "unexpected match with {}{} in int: {}, was: {}", unit_digit, five_digit, int, roman)
+            get_digit_at(int, place) == 4
         } else {
-            assert_ne!(get_digit_at(int, place), 4, "missing {}{} in int: {}, was: {}", unit_digit, five_digit, int, roman)
+            get_digit_at(int, place) != 4
         }
     }
 
-    fn nine_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, tens_digit: RomanDigit) {
-        let exist = roman.roman_digits.
-            as_slice()
-            .windows(2)
-            .any(|chunk| {
-                match chunk {
-                    [stl, last] if last == &tens_digit && stl == &unit_digit => true,
-                    _ => false
-                }
-            });
+    fn nine_property(int: usize, roman: &RomanNumber, place: usize, unit_digit: RomanDigit, tens_digit: RomanDigit) -> bool {
+        let exist = has_pattern(roman, &[unit_digit, tens_digit]);
 
         if exist {
-            assert_eq!(get_digit_at(int, place), 9, "unexpected match with {}{} in int: {}, was: {}", unit_digit, tens_digit, int, roman)
+            get_digit_at(int, place) == 9
         } else {
-            assert_ne!(get_digit_at(int, place), 9, "missing {}{} in int: {}, was: {}", unit_digit, tens_digit, int, roman)
+            get_digit_at(int, place) != 9
         }
+    }
+
+    fn has_pattern(roman: &RomanNumber, pattern: &[RomanDigit]) -> bool {
+    	roman.roman_digits
+            .as_slice()
+            .windows(pattern.len())
+            .any(|chunk| chunk == pattern)
     }
 
     #[test]
     fn test_convert_int_to_roman_to_int_return_the_same() {
-        for int in 0..4000 {
+        test_property("Convert int to roman and back to int should be the same", |int| {
             let roman = RomanNumber::from_decimal(int);
             let result = roman.to_decimal();
 
-            assert_eq!(result, int, "roman was: {}, resulting int was {}", roman, int)
-        }
+            result == int
+        })
     }
 
     #[test]
